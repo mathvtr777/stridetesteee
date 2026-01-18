@@ -51,8 +51,13 @@ export default {
         success: "hsl(var(--success))",
         warning: "hsl(var(--warning))",
         trail: "hsl(var(--trail))",
-        "background-light": "#f2f2f3",
-        "background-dark": "#0a0a0b",
+        "background-light": "#f4f4f5", // Updated to match user request
+        "background-dark": "#131315", // Updated to match user request
+        "surface-dark": "#1F1F24",
+        "accent-purple": "#7A1AFE"
+      },
+      boxShadow: {
+        'glow': '0 0 15px -3px rgba(140, 48, 232, 0.4)',
       },
       fontFamily: {
         display: ["Space Grotesk", "sans-serif"],
