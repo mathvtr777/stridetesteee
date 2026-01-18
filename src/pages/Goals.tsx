@@ -28,7 +28,7 @@ export default function Goals() {
                 <nav className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 bg-background-dark/80 backdrop-blur-md">
                     <div className="flex items-center gap-2">
                         <Icon name="analytics" className="text-primary" />
-                        <span className="font-bold tracking-tight text-lg">GoalCenter</span>
+                        <span className="font-bold tracking-tight text-lg">Central de Metas</span>
                     </div>
                     <div className="flex gap-4">
                         <button className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors">
@@ -42,12 +42,12 @@ export default function Goals() {
 
                 <main className="px-6">
                     {/* Hero Section: 3D Visualization */}
-                    <div className="relative flex flex-col items-center justify-center py-12 overflow-hidden">
+                    <div className="relative flex flex-col items-center justify-center py-12 overflow-visible">
                         {/* Atmospheric Background Glow */}
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-primary/20 rounded-full blur-[120px] pointer-events-none"></div>
 
-                        {/* Central 3D Sphere Vessel */}
-                        <div className="relative w-64 h-64 mb-8">
+                        {/* Central 3D Sphere Vessel - Reduced size for mobile */}
+                        <div className="relative w-56 h-56 mb-8 transform scale-90 sm:scale-100">
                             {/* Glass Outer Sphere */}
                             <div className="absolute inset-0 rounded-full border border-white/20 sphere-glow bg-gradient-to-br from-white/10 to-transparent backdrop-blur-[2px] z-10 overflow-hidden">
                                 {/* Liquid Fill */}
@@ -64,26 +64,26 @@ export default function Goals() {
 
                             {/* Center Text Overlay */}
                             <div className="absolute inset-0 flex flex-col items-center justify-center z-30">
-                                <span className="text-xs uppercase tracking-[0.3em] text-white/60 mb-1">Monthly Progress</span>
-                                <h1 className="text-6xl font-bold tracking-tighter">{stats.monthlyProgress}%</h1>
+                                <span className="text-[10px] uppercase tracking-[0.2em] text-white/60 mb-1">Progresso Mensal</span>
+                                <h1 className="text-5xl font-bold tracking-tighter">{stats.monthlyProgress}%</h1>
                             </div>
 
-                            {/* Orbital Chrome Bars */}
-                            <div className="absolute -left-12 bottom-0 flex items-end gap-2 h-32">
-                                <div className="w-3 h-20 rounded-full chrome-bar animate-pulse"></div>
-                                <div className="w-3 h-28 rounded-full chrome-bar"></div>
-                                <div className="w-3 h-24 rounded-full chrome-bar"></div>
+                            {/* Orbital Chrome Bars - Adjusted positions */}
+                            <div className="absolute -left-8 bottom-0 flex items-end gap-2 h-32">
+                                <div className="w-2.5 h-20 rounded-full chrome-bar animate-pulse"></div>
+                                <div className="w-2.5 h-28 rounded-full chrome-bar"></div>
+                                <div className="w-2.5 h-24 rounded-full chrome-bar"></div>
                             </div>
-                            <div className="absolute -right-12 bottom-0 flex items-end gap-2 h-32">
-                                <div className="w-3 h-16 rounded-full chrome-bar"></div>
-                                <div className="w-3 h-32 rounded-full chrome-bar"></div>
-                                <div className="w-3 h-20 rounded-full chrome-bar animate-pulse"></div>
+                            <div className="absolute -right-8 bottom-0 flex items-end gap-2 h-32">
+                                <div className="w-2.5 h-16 rounded-full chrome-bar"></div>
+                                <div className="w-2.5 h-32 rounded-full chrome-bar"></div>
+                                <div className="w-2.5 h-20 rounded-full chrome-bar animate-pulse"></div>
                             </div>
                         </div>
 
                         <div className="text-center">
-                            <p className="text-primary font-medium tracking-wide">Monthly Running Goal</p>
-                            <p className="text-white/40 text-sm mt-1">{stats.remainingDays} days remaining to hit 150km</p>
+                            <p className="text-primary font-medium tracking-wide">Meta de Corrida Mensal</p>
+                            <p className="text-white/40 text-sm mt-1">{stats.remainingDays} dias restantes para atingir 150km</p>
                         </div>
                     </div>
 
@@ -91,8 +91,8 @@ export default function Goals() {
                     <div className="glass-card rounded-xl p-6 mb-8">
                         <div className="flex justify-between items-center mb-6">
                             <div>
-                                <h3 className="text-lg font-bold">Weekly Performance</h3>
-                                <p className="text-white/40 text-sm">Active distance tracking</p>
+                                <h3 className="text-lg font-bold">Desempenho Semanal</h3>
+                                <p className="text-white/40 text-sm">Distância ativa rastreada</p>
                             </div>
                             <div className="text-right">
                                 <p className="text-2xl font-bold">{stats.activeDistance}km</p>
@@ -104,7 +104,7 @@ export default function Goals() {
 
                         {/* Chart Bars */}
                         <div className="grid grid-cols-7 gap-3 items-end h-32 px-2">
-                            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => {
+                            {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((day, i) => {
                                 // Mock heights for demo
                                 const heights = ['70%', '40%', '85%', '20%', '55%', '95%', '15%'];
                                 return (
@@ -125,8 +125,8 @@ export default function Goals() {
                     {/* Active Goals Section */}
                     <div className="space-y-4">
                         <div className="flex justify-between items-center">
-                            <h2 className="text-xl font-bold tracking-tight">Active Goals</h2>
-                            <button className="text-primary text-sm font-semibold">View All</button>
+                            <h2 className="text-xl font-bold tracking-tight">Metas Ativas</h2>
+                            <button className="text-primary text-sm font-semibold">Ver Todas</button>
                         </div>
 
                         {/* Goal Card 1 */}
@@ -141,8 +141,8 @@ export default function Goals() {
                                 </div>
                             </div>
                             <div className="flex-1">
-                                <h4 className="font-bold text-base">Half Marathon Prep</h4>
-                                <p className="text-white/40 text-xs">15.2 / 21.1 km completed</p>
+                                <h4 className="font-bold text-base">Prep. Meia Maratona</h4>
+                                <p className="text-white/40 text-xs">15.2 / 21.1 km completados</p>
                             </div>
                             <div className="text-right">
                                 <Icon name="chevron_right" className="text-white/20 group-hover:text-primary transition-colors" />
@@ -161,8 +161,8 @@ export default function Goals() {
                                 </div>
                             </div>
                             <div className="flex-1">
-                                <h4 className="font-bold text-base">Elevation King</h4>
-                                <p className="text-white/40 text-xs">450 / 600 m vertical gain</p>
+                                <h4 className="font-bold text-base">Rei da Elevação</h4>
+                                <p className="text-white/40 text-xs">450 / 600 m ganho vertical</p>
                             </div>
                             <div className="text-right">
                                 <Icon name="chevron_right" className="text-white/20 group-hover:text-primary transition-colors" />
@@ -174,7 +174,7 @@ export default function Goals() {
                     <div className="mt-10 mb-6">
                         <button className="w-full py-4 rounded-xl bg-primary text-white font-bold tracking-wide flex items-center justify-center gap-2 shadow-[0_8px_30px_rgba(140,48,232,0.4)] border border-white/10 overflow-hidden relative active:scale-95 transition-transform">
                             <Icon name="add_circle" />
-                            Set New Goal
+                            Nova Meta
                             <div className="absolute inset-0 bg-white/10 opacity-0 hover:opacity-100 transition-opacity"></div>
                         </button>
                     </div>
