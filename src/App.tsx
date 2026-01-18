@@ -17,6 +17,7 @@ import PlanSafeRoute from "./pages/safety/PlanSafeRoute";
 import NotFound from "./pages/NotFound";
 import CreateAccount from "./pages/auth/CreateAccount";
 import Login from "./pages/auth/Login";
+import { AuthGuard } from "./components/auth/AuthGuard";
 
 const queryClient = new QueryClient();
 
@@ -27,20 +28,24 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/explore" element={<Explore />} />
-          <Route path="/training" element={<Training />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/run" element={<LiveRun />} />
-          <Route path="/share/:id" element={<ShareRun />} />
-          <Route path="/goals" element={<Goals />} />
-          <Route path="/safety" element={<SafetyMap />} />
-          <Route path="/safety/report" element={<ReportRisk />} />
-          <Route path="/safety/risk/:id" element={<RiskIntel />} />
-          <Route path="/safety/plan" element={<PlanSafeRoute />} />
+          {/* Public Auth Routes */}
           <Route path="/auth/register" element={<CreateAccount />} />
           <Route path="/auth/login" element={<Login />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+
+          {/* Protected Routes */}
+          <Route path="/" element={<AuthGuard><Dashboard /></AuthGuard>} />
+          <Route path="/explore" element={<AuthGuard><Explore /></AuthGuard>} />
+          <Route path="/training" element={<AuthGuard><Training /></AuthGuard>} />
+          <Route path="/profile" element={<AuthGuard><Profile /></AuthGuard>} />
+          <Route path="/run" element={<AuthGuard><LiveRun /></AuthGuard>} />
+          <Route path="/share/:id" element={<AuthGuard><ShareRun /></AuthGuard>} />
+          <Route path="/goals" element={<AuthGuard><Goals /></AuthGuard>} />
+
+          <Route path="/safety" element={<AuthGuard><SafetyMap /></AuthGuard>} />
+          <Route path="/safety/report" element={<AuthGuard><ReportRisk /></AuthGuard>} />
+          <Route path="/safety/risk/:id" element={<AuthGuard><RiskIntel /></AuthGuard>} />
+          <Route path="/safety/plan" element={<AuthGuard><PlanSafeRoute /></AuthGuard>} />
+
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
