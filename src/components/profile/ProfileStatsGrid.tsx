@@ -9,10 +9,10 @@ export function ProfileStatsGrid() {
     const totalDistance = runs.reduce((sum, r) => sum + r.distanceKm, 0);
     // Calculate weekly average (mock logic for now, or simple division)
     // For simplicity, let's assume "weekly" is total / 4 for this demo if not enough data
-    const weeklyAvg = totalDistance > 0 ? (totalDistance / 4) : 42.8;
+    const weeklyAvg = totalDistance > 0 ? (totalDistance / 4) : 0;
 
     return {
-      totalDistance: totalDistance > 0 ? totalDistance.toFixed(0) : "2,842",
+      totalDistance: totalDistance.toFixed(1),
       weeklyAvg: weeklyAvg.toFixed(1),
     };
   }, [runs]);

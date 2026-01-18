@@ -1,12 +1,28 @@
 import { Avatar } from '@/components/ui/Avatar';
 import { Icon } from '@/components/ui/Icon';
 import { useAppStore } from '@/store/useAppStore';
+import { supabase } from '@/lib/supabase';
+import { useEffect } from 'react';
 
 export function ProfileHeader() {
   const profile = useAppStore((s) => s.profile);
+  const setProfile = useAppStore((s) => s.setProfile);
 
-  // Mock data for enhanced profile view
-  const avatarUrl = profile.avatar || "https://lh3.googleusercontent.com/aida-public/AB6AXuBbHDQGB__C_17bO-hn5E0CA3nHX456EidL3NspK3ZNXHqhzyajUXUevCyooq0l2_RO4wGq65KZwAx0ujDLGs4AMzYUrO1ljQRGlcFCoTVniLThVpIXnx-kFFgqeiydoIzDMAIXnEaL6VXBzT6w69Wz3WNlSbFQhZxN2sGTuck29s48hT44HI77ZXRqn5c_rCx_NVJXtWl_qXZFZlYEez7myD6IzEYxwmw5nDV4GzHUzNlpDfdsxDa6ZPRa3aJVdT0LtrxgpuuqR0c";
+  // Fetch real user data on mount
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user?.user_metadata?.full_name) {
+        setProfile({
+          ...profile,
+          name: user.user_metadata.full_name,
+          // Use avatar if we had one, otherwise keep default or empty
+        });
+      }
+    });
+  }, []);
+
+  // Default avatar if none
+  const avatarUrl = profile.avatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
   return (
     <div className="relative z-10 flex flex-col items-center pt-4 pb-8">
@@ -22,8 +38,8 @@ export function ProfileHeader() {
           <Icon name="edit" className="text-[14px] text-white" />
         </div>
       </div>
-      <h1 className="mt-6 text-3xl font-black text-slant-premium text-white">{profile.name}</h1>
-      <p className="text-primary text-[11px] font-bold tracking-[0.2em] mt-1">ELITE RUNNER • LEVEL 42</p>
+      <h1 className="mt-6 text-3xl font-black text-slant-premium text-white">{profile.name || 'Convidado'}</h1>
+      <p className="text-primary text-[11px] font-bold tracking-[0.2em] mt-1">NOVO CORREDOR • NÍVEL 1</p>
     </div>
   );
 }
