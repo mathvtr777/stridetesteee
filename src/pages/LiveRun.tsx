@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/store/useAppStore';
 import { useGeolocation } from '@/hooks/useGeolocation';
@@ -8,7 +8,10 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import { generateId, saveRun } from '@/lib/db';
 import { cn } from '@/lib/utils';
 import { calculateTotalDistance } from '@/lib/geoUtils';
-import { toast } from 'sonner'; // Importando Sonner
+import { toast } from 'sonner';
+
+// ✅ ADD: Capacitor Geolocation (permite popup nativo no Android)
+import { Geolocation } from '@capacitor/geolocation';
 
 // Definindo um limite de precisão para a atualização do mapa (em metros)
 const MAP_UPDATE_MAX_ACCURACY = 20;
@@ -36,13 +39,40 @@ export default function LiveRun() {
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
   const [mockBpm] = useState(() => Math.floor(Math.random() * 30) + 140);
-  const [hasInitialMapCentered, setHasInitialMapCentered] = useState(false); // Novo estado
+  const [hasInitialMapCentered, setHasInitialMapCentered] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(Date.now());
   const pausedDurationRef = useRef<number>(0);
 
-  // Geolocation
+  // ✅ ADD: função que pede permissão do GPS via Capacitor (popup nativo)
+  const requestGpsPermission = async (): Promise<boolean> => {
+    try {
+      const perm = await Geolocation.requestPermissions();
+
+      const granted =
+        perm.location === 'granted' ||
+        perm.coarseLocation === 'granted';
+
+      if (!granted) {
+        toast.error(
+          'Permissão de localização negada. Vá em Configurações > Apps > Stride > Permissões e permita Localização.',
+          { duration: 6000, id: 'geo-permission' }
+        );
+        return false;
+      }
+
+      return true;
+    } catch (e) {
+      toast.error('Não foi possível solicitar permissão de localização.', {
+        duration: 6000,
+        id: 'geo-permission-error',
+      });
+      return false;
+    }
+  };
+
+  // Geolocation (seu hook)
   const { currentPosition, error: geoError, startTracking, stopTracking } = useGeolocation({
     onPoint: (point) => {
       if (isRunning && !isPaused) {
@@ -57,7 +87,6 @@ export default function LiveRun() {
   const { map, isMapReady, isFollowing, updateUserPosition, updateRoute, zoomIn, zoomOut, recenter } = useMap(
     mapContainerRef as React.RefObject<HTMLDivElement>,
     {
-      // Passar null para initialCenter para que o mapa não comece em um local fixo
       initialCenter: null,
     }
   );
@@ -78,19 +107,38 @@ export default function LiveRun() {
     return `${mins}'${secs.toString().padStart(2, '0')}"/km`;
   };
 
-  // Initialize run
+  // ✅ UPDATED: Initialize run (agora pede permissão antes)
   useEffect(() => {
-    if (!isRunning) {
+    let isMounted = true;
+
+    const init = async () => {
+      // Evita iniciar de novo se já estiver rodando
+      if (isRunning) return;
+
+      // 1) pede permissão nativa
+      const allowed = await requestGpsPermission();
+      if (!isMounted) return;
+
+      if (!allowed) {
+        // se não permitir, não inicia tracking nem corrida
+        return;
+      }
+
+      // 2) inicia corrida e tracking
       startRun();
       startTracking();
       startTimeRef.current = Date.now();
-    }
+    };
+
+    init();
 
     return () => {
+      isMounted = false;
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Handle Geolocation Errors with Toast
@@ -103,17 +151,15 @@ export default function LiveRun() {
           duration: 5000,
           id: 'geo-warning',
         });
-        toast.dismiss('geo-error'); // Dismiss any previous fatal error
+        toast.dismiss('geo-error');
       } else {
-        // Fatal errors (Permission Denied, Timeout, Unavailable)
         toast.error(geoError, {
           duration: 5000,
           id: 'geo-error',
         });
-        toast.dismiss('geo-warning'); // Dismiss any previous warning
+        toast.dismiss('geo-warning');
       }
     } else {
-      // Clear all toasts if tracking is successful
       toast.dismiss('geo-error');
       toast.dismiss('geo-warning');
     }
@@ -139,7 +185,7 @@ export default function LiveRun() {
         clearInterval(timerRef.current);
       }
     };
-  }, [isRunning, isPaused, currentRunPoints, updateCurrentMetrics]); // Dependency on currentRunPoints ensures distance calculation uses latest points
+  }, [isRunning, isPaused, currentRunPoints, updateCurrentMetrics]);
 
   // Update map with position AND control recentering
   useEffect(() => {
@@ -153,17 +199,12 @@ export default function LiveRun() {
       if (accuracy <= MAP_UPDATE_MAX_ACCURACY && isFollowing) {
         map.easeTo({
           center: [longitude, latitude],
-          zoom: 16, // Definir um zoom inicial razoável
+          zoom: 16,
           duration: 500,
         });
-        // Marcar que o mapa foi centralizado na posição inicial
         if (!hasInitialMapCentered) {
           setHasInitialMapCentered(true);
         }
-      } else if (accuracy > MAP_UPDATE_MAX_ACCURACY && !hasInitialMapCentered) {
-        // Se a precisão for ruim e o mapa ainda não foi centralizado,
-        // podemos mostrar um zoom mais amplo ou uma mensagem de espera.
-        // Por enquanto, não fazemos nada para evitar saltos.
       }
     }
   }, [currentPosition, isMapReady, updateUserPosition, isFollowing, map, hasInitialMapCentered]);
@@ -181,7 +222,6 @@ export default function LiveRun() {
       resumeRun();
     } else {
       pauseRun();
-      // When pausing, record the duration elapsed so far
       pausedDurationRef.current = currentDuration;
     }
   };
@@ -244,12 +284,14 @@ export default function LiveRun() {
             <span className="text-sm font-medium">Live Tracking</span>
           </div>
           {currentPosition && (
-            <div className={cn(
-              "flex items-center gap-1 px-2 py-1 rounded-lg glass text-xs",
-              currentPosition.coords.accuracy <= 10 && "text-success",
-              currentPosition.coords.accuracy > 10 && currentPosition.coords.accuracy <= 30 && "text-warning",
-              currentPosition.coords.accuracy > 30 && "text-destructive"
-            )}>
+            <div
+              className={cn(
+                'flex items-center gap-1 px-2 py-1 rounded-lg glass text-xs',
+                currentPosition.coords.accuracy <= 10 && 'text-success',
+                currentPosition.coords.accuracy > 10 && currentPosition.coords.accuracy <= 30 && 'text-warning',
+                currentPosition.coords.accuracy > 30 && 'text-destructive'
+              )}
+            >
               <Icon name="gps_fixed" className="text-xs" />
               <span>±{currentPosition.coords.accuracy.toFixed(0)}m</span>
             </div>
@@ -270,7 +312,8 @@ export default function LiveRun() {
           <div className="absolute -right-8 -top-8 size-32 bg-primary/20 rounded-full blur-3xl" />
           <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Distance</p>
           <p className="text-4xl font-bold tracking-tighter text-glow mt-1">
-            {currentDistance.toFixed(2)}<span className="text-lg text-muted-foreground ml-1">km</span>
+            {currentDistance.toFixed(2)}
+            <span className="text-lg text-muted-foreground ml-1">km</span>
           </p>
         </GlassCard>
 
@@ -298,7 +341,10 @@ export default function LiveRun() {
           <div className="flex items-center gap-3">
             <Icon name="favorite" className="text-red-500 text-xl" />
             <div>
-              <p className="text-xl font-bold">{mockBpm}<span className="text-sm text-muted-foreground ml-1">bpm</span></p>
+              <p className="text-xl font-bold">
+                {mockBpm}
+                <span className="text-sm text-muted-foreground ml-1">bpm</span>
+              </p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -319,9 +365,7 @@ export default function LiveRun() {
           onClick={handlePauseResume}
           className={cn(
             'w-full flex items-center justify-center gap-3 rounded-2xl p-5 mb-4 transition-all',
-            isPaused
-              ? 'btn-gradient'
-              : 'glass border-primary/30'
+            isPaused ? 'btn-gradient' : 'glass border-primary/30'
           )}
         >
           <Icon name={isPaused ? 'play_circle' : 'pause_circle'} className="text-3xl" />
@@ -329,32 +373,20 @@ export default function LiveRun() {
         </button>
 
         {/* Lock hint */}
-        <button
-          onClick={handleLock}
-          className="w-full flex items-center justify-center gap-2 py-2 text-muted-foreground"
-        >
+        <button onClick={handleLock} className="w-full flex items-center justify-center gap-2 py-2 text-muted-foreground">
           <Icon name="lock" className="text-sm" />
           <span className="text-xs">Hold to Lock Screen</span>
         </button>
 
         {/* Zoom controls */}
         <div className="absolute bottom-32 right-6 flex flex-col gap-2">
-          <button
-            onClick={zoomIn}
-            className="size-10 rounded-xl glass flex items-center justify-center hover:bg-white/5"
-          >
+          <button onClick={zoomIn} className="size-10 rounded-xl glass flex items-center justify-center hover:bg-white/5">
             <Icon name="add" className="text-foreground" />
           </button>
-          <button
-            onClick={zoomOut}
-            className="size-10 rounded-xl glass flex items-center justify-center hover:bg-white/5"
-          >
+          <button onClick={zoomOut} className="size-10 rounded-xl glass flex items-center justify-center hover:bg-white/5">
             <Icon name="remove" className="text-foreground" />
           </button>
-          <button
-            onClick={recenter}
-            className="size-10 rounded-xl glass flex items-center justify-center hover:bg-white/5"
-          >
+          <button onClick={recenter} className="size-10 rounded-xl glass flex items-center justify-center hover:bg-white/5">
             <Icon name="navigation" className="text-primary" />
           </button>
         </div>
@@ -375,10 +407,7 @@ export default function LiveRun() {
               >
                 Cancel
               </button>
-              <button
-                onClick={handleFinish}
-                className="flex-1 py-3 rounded-xl btn-gradient font-bold"
-              >
+              <button onClick={handleFinish} className="flex-1 py-3 rounded-xl btn-gradient font-bold">
                 Finish
               </button>
             </div>
