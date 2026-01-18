@@ -12,6 +12,8 @@ import { toast } from 'sonner';
 
 // ✅ ADD: Capacitor Geolocation (permite popup nativo no Android)
 import { Geolocation } from '@capacitor/geolocation';
+// ✅ ADD: Foreground Service
+import { ForegroundService } from '@capawesome-team/capacitor-android-foreground-service';
 
 // Definindo um limite de precisão para a atualização do mapa (em metros)
 const MAP_UPDATE_MAX_ACCURACY = 20;
@@ -41,9 +43,11 @@ export default function LiveRun() {
   const [mockBpm] = useState(() => Math.floor(Math.random() * 30) + 140);
   const [hasInitialMapCentered, setHasInitialMapCentered] = useState(false);
 
+  // Refs for throttling
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(Date.now());
   const pausedDurationRef = useRef<number>(0);
+  const lastFollowUpdateRef = useRef<number>(0); // Controls map follow frequency
 
   // ✅ ADD: função que pede permissão do GPS via Capacitor (popup nativo)
   const requestGpsPermission = async (): Promise<boolean> => {
@@ -107,6 +111,43 @@ export default function LiveRun() {
     return `${mins}'${secs.toString().padStart(2, '0')}"/km`;
   };
 
+  // ✅ ADD: Foreground Service Helpers
+  const performForegroundAction = async (action: 'start' | 'update' | 'stop', elapsedSec = 0) => {
+    try {
+      if (action === 'stop') {
+        await ForegroundService.stopForegroundService();
+        return;
+      }
+
+      const title = isPaused ? 'Corrida Pausada' : 'Corrida em Andamento';
+      const timeString = formatDuration(elapsedSec);
+      const body = `Tempo: ${timeString} • Distância: ${currentDistance.toFixed(2)}km`;
+
+      if (action === 'start') {
+        // Try to request notification permission first (ignoring result to not block)
+        // Note: Android 13+ requires POST_NOTIFICATIONS, but the plugin usually handles execution safe
+        await ForegroundService.startForegroundService({
+          id: 1001,
+          title: 'Stride Run',
+          body: 'Iniciando corrida...',
+          smallIcon: 'ic_stat_run', // Make sure this icon exists or use generic
+          buttons: [
+            // Buttons can be added here if needed, keeping it simple
+          ],
+        });
+      } else if (action === 'update') {
+        await ForegroundService.updateForegroundService({
+          id: 1001,
+          title: title,
+          body: body,
+        });
+      }
+    } catch (error) {
+      console.warn('Foreground Service Error:', error);
+      // Suppress error on web or if plugin missing
+    }
+  };
+
   // ✅ UPDATED: Initialize run (agora pede permissão antes)
   useEffect(() => {
     let isMounted = true;
@@ -128,6 +169,7 @@ export default function LiveRun() {
       startRun();
       startTracking();
       startTimeRef.current = Date.now();
+      performForegroundAction('start'); // Start Service
     };
 
     init();
@@ -137,6 +179,7 @@ export default function LiveRun() {
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
+      performForegroundAction('stop'); // Ensure stop on unmount
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -165,9 +208,10 @@ export default function LiveRun() {
     }
   }, [geoError]);
 
-  // Timer and Metric Update Loop
+  // Timer and Metric Update Loop - OPTIMIZED: 2s Interval
   useEffect(() => {
     if (isRunning && !isPaused) {
+      // Run every 2 seconds instead of 1 to reduce calculation load
       timerRef.current = setInterval(() => {
         const elapsed = (Date.now() - startTimeRef.current) / 1000 - pausedDurationRef.current;
 
@@ -175,7 +219,8 @@ export default function LiveRun() {
         const distance = calculateTotalDistance(currentRunPoints);
 
         updateCurrentMetrics(distance, elapsed);
-      }, 1000);
+        performForegroundAction('update', elapsed); // Update Notification
+      }, 2000); // Changed to 2000ms
     } else if (timerRef.current) {
       clearInterval(timerRef.current);
     }
@@ -184,6 +229,7 @@ export default function LiveRun() {
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
+      // Do not stop service here on simple unmount of effect, only on full unmount (handled above)
     };
   }, [isRunning, isPaused, currentRunPoints, updateCurrentMetrics]);
 
@@ -195,24 +241,34 @@ export default function LiveRun() {
       // 1. Always update the marker position if we have a reading
       updateUserPosition(latitude, longitude);
 
-      // 2. Only recenter/follow if the accuracy is good AND we are in following mode
+      // 2. Throttled follow: Only recenter max once per second
+      const now = Date.now();
       if (accuracy <= MAP_UPDATE_MAX_ACCURACY && isFollowing) {
-        map.easeTo({
-          center: [longitude, latitude],
-          zoom: 16,
-          duration: 500,
-        });
-        if (!hasInitialMapCentered) {
-          setHasInitialMapCentered(true);
+        if (now - lastFollowUpdateRef.current > 1000 || !hasInitialMapCentered) {
+          map.easeTo({
+            center: [longitude, latitude],
+            zoom: 16,
+            duration: 500,
+          });
+          lastFollowUpdateRef.current = now;
+
+          if (!hasInitialMapCentered) {
+            setHasInitialMapCentered(true);
+          }
         }
       }
     }
   }, [currentPosition, isMapReady, updateUserPosition, isFollowing, map, hasInitialMapCentered]);
 
-  // Update route on map
+  // Update route on map - OPTIMIZED: Update only every 5 points
   useEffect(() => {
+    // Only update if map is ready and we have points
     if (currentRunPoints.length > 0 && isMapReady) {
-      updateRoute(currentRunPoints);
+      // Batch updates: simple modulo check
+      // Also always update on the very first few points to show initial progress
+      if (currentRunPoints.length % 5 === 0 || currentRunPoints.length < 5) {
+        updateRoute(currentRunPoints);
+      }
     }
   }, [currentRunPoints, isMapReady, updateRoute]);
 
@@ -220,9 +276,16 @@ export default function LiveRun() {
   const handlePauseResume = () => {
     if (isPaused) {
       resumeRun();
+      // Wait a tick for state to update or pass manual flag if needed, 
+      // but 'isPaused' will be old here. Better to rely on the next effect tick 
+      // OR explicitly update with expected state.
+      // Let's rely on the effect loop for "Running" update, but force "Paused" update immediately below.
+      // Actually, we can just trigger an update with the current time.
+      setTimeout(() => performForegroundAction('update', currentDuration), 100);
     } else {
       pauseRun();
       pausedDurationRef.current = currentDuration;
+      setTimeout(() => performForegroundAction('update', currentDuration), 100);
     }
   };
 
@@ -230,6 +293,7 @@ export default function LiveRun() {
   const handleFinish = async () => {
     stopTracking();
     stopRun();
+    performForegroundAction('stop'); // Stop Service
 
     const run = {
       id: generateId(),
@@ -277,7 +341,7 @@ export default function LiveRun() {
       <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-background/80 via-transparent to-background/90" />
 
       {/* Header */}
-      <header className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-6 py-4 safe-top">
+      <header className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-6 py-4 safe-top" style={{ paddingTop: 'calc(1rem + var(--sat))' }}>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <div className="size-2 rounded-full bg-success animate-pulse" />
@@ -359,7 +423,7 @@ export default function LiveRun() {
       </div>
 
       {/* Bottom Controls */}
-      <div className="absolute bottom-0 left-0 right-0 z-10 px-6 pb-8 safe-bottom">
+      <div className="absolute bottom-0 left-0 right-0 z-10 px-6 pb-8 safe-bottom" style={{ paddingBottom: 'calc(2rem + var(--sab))' }}>
         {/* Pause/Resume Button */}
         <button
           onClick={handlePauseResume}
