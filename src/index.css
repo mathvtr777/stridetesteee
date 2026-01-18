@@ -1,0 +1,264 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 100%;
+
+    --card: 240 6% 10%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 240 6% 10%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 271 80% 55%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 271 80% 65%;
+
+    --secondary: 240 6% 15%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 240 5% 18%;
+    --muted-foreground: 0 0% 60%;
+
+    --accent: 271 80% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 100% / 0.08;
+    --input: 0 0% 100% / 0.08;
+    --ring: 271 80% 55%;
+
+    --radius: 0.75rem;
+
+    /* Custom tokens */
+    --glass-bg: 240 6% 10% / 0.6;
+    --glass-border: 0 0% 100% / 0.08;
+    --text-glow: 0 0 15px hsl(271 80% 55% / 0.4);
+    --btn-shadow: 0 10px 25px -5px hsl(271 80% 55% / 0.4);
+    --success: 142 76% 36%;
+    --warning: 38 92% 50%;
+    --trail: 25 95% 53%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    font-family: 'Space Grotesk', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    min-height: 100dvh;
+  }
+}
+
+@layer components {
+  .glass {
+    background: hsl(var(--glass-bg));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--glass-border));
+  }
+
+  .text-glow {
+    text-shadow: var(--text-glow);
+  }
+
+  .btn-gradient {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-glow)) 100%);
+    box-shadow: var(--btn-shadow);
+  }
+
+  .btn-gradient:active {
+    transform: scale(0.98);
+  }
+
+  .progress-glow {
+    box-shadow: 0 0 8px hsl(271 80% 55% / 0.6);
+  }
+
+  .card-hover {
+    @apply transition-all duration-300;
+  }
+
+  .card-hover:hover {
+    border-color: hsl(271 80% 55% / 0.3);
+  }
+
+  /* Profile specific styles */
+  .glow-ring {
+    box-shadow: 0 0 25px 2px hsl(var(--primary) / 0.4);
+  }
+
+  .trophy-shadow {
+    filter: drop-shadow(0 10px 15px hsl(var(--primary) / 0.2));
+  }
+
+  /* Hide scrollbar but keep functionality */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Safe area padding for mobile */
+  .safe-bottom {
+    padding-bottom: max(2rem, env(safe-area-inset-bottom));
+  }
+
+  .safe-top {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+}
+
+@layer utilities {
+  .tracking-ultra {
+    letter-spacing: 0.2em;
+  }
+}
+
+/* Share Screen Custom Styles */
+@layer utilities {
+  .map-neon-glow {
+    filter: drop-shadow(0 0 12px rgba(140, 48, 232, 0.9)) contrast(1.5) brightness(1.2);
+  }
+
+  .medal-chrome {
+    background: linear-gradient(145deg, #ffd700 0%, #fff3b0 25%, #8c30e8 50%, #4c1d95 75%, #000 100%);
+    box-shadow:
+      inset 0 0 20px rgba(255, 255, 255, 0.6),
+      0 10px 40px rgba(140, 48, 232, 0.4);
+  }
+
+  .gold-text-shimmer {
+    background: linear-gradient(to right, #ffd700 20%, #ffffff 40%, #ffffff 60%, #ffd700 80%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .holographic-badge {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(140, 48, 232, 0.2) 25%, rgba(0, 255, 255, 0.1) 50%, rgba(140, 48, 232, 0.2) 75%, rgba(255, 255, 255, 0.1) 100%);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .glass-premium {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .text-outline-purple {
+    -webkit-text-stroke: 1px #8c30e8;
+    color: transparent;
+  }
+
+  .dust-particle {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: #b366ff;
+    border-radius: 50%;
+    filter: blur(1px);
+    box-shadow: 0 0 4px #8c30e8;
+  }
+
+  .vignette-heavy {
+    box-shadow: inset 0 0 180px rgba(0, 0, 0, 1);
+  }
+
+  /* Profile Redesign Styles */
+  .glass-panel-deep {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow:
+      inset 0 1px 1px rgba(255, 255, 255, 0.1),
+      0 10px 30px -10px rgba(0, 0, 0, 0.5);
+  }
+
+  .neon-ring {
+    box-shadow: 0 0 0 4px rgba(0, 0, 0, 1),
+      0 0 0 6px #8c30e8,
+      0 0 20px #8c30e8,
+      inset 0 0 15px #8c30e8;
+  }
+
+  .medal-3d-gold {
+    background: linear-gradient(145deg, #ffd700 0%, #fff3b0 20%, #b8860b 40%, #8c30e8 60%, #2e1065 100%);
+    box-shadow:
+      0 15px 30px -5px rgba(0, 0, 0, 0.8),
+      inset 0 -5px 10px rgba(0, 0, 0, 0.5),
+      inset 0 5px 10px rgba(255, 255, 255, 0.4);
+    transform: perspective(500px) rotateY(-10deg) rotateX(5deg);
+  }
+
+  .medal-3d-purple {
+    background: linear-gradient(145deg, #d8b4fe 0%, #8c30e8 30%, #4c1d95 70%, #000 100%);
+    box-shadow:
+      0 15px 30px -5px rgba(0, 0, 0, 0.8),
+      inset 0 -5px 10px rgba(0, 0, 0, 0.5),
+      inset 0 5px 10px rgba(255, 255, 255, 0.4);
+    transform: perspective(500px) rotateY(15deg) translateY(-8px);
+  }
+
+  .text-slant-premium {
+    font-style: italic;
+    letter-spacing: -0.05em;
+    text-transform: uppercase;
+    transform: skewX(-6deg);
+  }
+
+  .bg-3d-shape {
+    position: absolute;
+    filter: blur(60px);
+    opacity: 0.15;
+    z-index: 0;
+  }
+
+  .holographic-shimmer {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0) 100%);
+    background-size: 200% 200%;
+  }
+
+  .floating-shadow {
+    filter: drop-shadow(0 20px 15px rgba(0, 0, 0, 0.6));
+  }
+
+  /* Goals Screen Styles */
+  .glass-card {
+    background: rgba(25, 17, 33, 0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(140, 48, 232, 0.2);
+  }
+
+  .sphere-glow {
+    box-shadow: 0 0 60px 20px rgba(140, 48, 232, 0.3);
+  }
+
+  .chrome-bar {
+    background: linear-gradient(180deg, #b77eff 0%, #8c30e8 50%, #4a1a7b 100%);
+    box-shadow: inset -2px 0 4px rgba(255, 255, 255, 0.2), 0 4px 15px rgba(140, 48, 232, 0.4);
+  }
+
+  .liquid-fill {
+    background: linear-gradient(0deg, #8c30e8 0%, #d1a3ff 100%);
+  }
+}
